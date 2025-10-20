@@ -4,12 +4,25 @@ A RESTful API for managing music albums and songs, built with Node.js Hapi frame
 
 ## Features
 
-- Full CRUD operations for Albums
-- Full CRUD operations for Songs
-- Song searching by title and performer
-- Album-Song relationships (view songs associated with an album)
-- PostgreSQL database with migrations
-- Comprehensive error handling and data validation
+- **🎵 Music Management**
+  - Full CRUD operations for Albums
+  - Full CRUD operations for Songs
+  - Song searching by title and performer
+  - Album-Song relationships (view songs associated with an album)
+
+- **🔐 Authentication & Security** ✨ NEW
+  - User registration with unique username validation
+  - Secure password hashing with bcrypt
+  - JWT-based authentication (access & refresh tokens)
+  - Token refresh mechanism for session management
+  - Secure logout with token invalidation
+  - Ready-to-use JWT strategy for protected routes
+
+- **🛠️ Technical Features**
+  - PostgreSQL database with migrations
+  - Comprehensive error handling and data validation
+  - RESTful API design
+  - CORS enabled
 
 ## Prerequisites
 
@@ -30,16 +43,27 @@ A RESTful API for managing music albums and songs, built with Node.js Hapi frame
    CREATE DATABASE openmusic;
    ```
 
-4. Configure environment variables in `.env` file:
+4. Configure environment variables in `.env` file (see `.env.example`):
    ```
    HOST=localhost
    PORT=5000
    
+   # Database
    PGUSER=postgres
    PGPASSWORD=your_password
    PGDATABASE=openmusic
    PGHOST=localhost
    PGPORT=5432
+   
+   # JWT Authentication (generate secure keys!)
+   ACCESS_TOKEN_KEY=your_secret_access_token_key
+   REFRESH_TOKEN_KEY=your_secret_refresh_token_key
+   ACCESS_TOKEN_AGE=1800
+   ```
+   
+   Generate secure keys for production:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
    ```
 
 5. Run database migrations:
@@ -57,6 +81,26 @@ npm run start
 The API will be available at `http://localhost:5000` (or your configured HOST and PORT).
 
 ## API Endpoints
+
+### 🔐 Authentication (NEW!)
+
+- **POST /users** - Register a new user
+  - Body: `{ "username": "string", "password": "string", "fullname": "string" }`
+  - Response: `{ "status": "success", "data": { "userId": "string" } }`
+
+- **POST /authentications** - Login (get access & refresh tokens)
+  - Body: `{ "username": "string", "password": "string" }`
+  - Response: `{ "status": "success", "data": { "accessToken": "string", "refreshToken": "string" } }`
+
+- **PUT /authentications** - Refresh access token
+  - Body: `{ "refreshToken": "string" }`
+  - Response: `{ "status": "success", "data": { "accessToken": "string" } }`
+
+- **DELETE /authentications** - Logout (invalidate refresh token)
+  - Body: `{ "refreshToken": "string" }`
+  - Response: `{ "status": "success", "message": "Refresh token berhasil dihapus" }`
+
+📖 **[View detailed authentication documentation →](./AUTHENTICATION.md)**
 
 ### Albums
 
@@ -114,18 +158,44 @@ The API will be available at `http://localhost:5000` (or your configured HOST an
 ## Project Structure
 
 ```
-├── migrations/                 # Database migrations
+├── migrations/                      # Database migrations
+│   ├── *_create-table-albums.js
+│   ├── *_create-table-songs.js
+│   ├── *_create-table-users.js      # ✨ NEW
+│   └── *_create-table-authentications.js  # ✨ NEW
 ├── src/
-│   ├── api/                   # API handlers and routes
+│   ├── api/                         # API handlers and routes
 │   │   ├── albums/
-│   │   └── songs/
-│   ├── exceptions/            # Custom error classes
-│   ├── services/              # Business logic
-│   ├── validator/             # Input validation
-│   └── server.js              # Main server file
-├── .env                       # Environment variables
+│   │   ├── songs/
+│   │   ├── users/                   # ✨ NEW
+│   │   └── authentications/         # ✨ NEW
+│   ├── exceptions/                  # Custom error classes
+│   │   ├── ClientError.js
+│   │   ├── InvariantError.js
+│   │   ├── NotFoundError.js
+│   │   └── AuthenticationError.js   # ✨ NEW
+│   ├── services/                    # Business logic
+│   │   ├── DatabaseService.js
+│   │   ├── AlbumsService.js
+│   │   ├── SongsService.js
+│   │   ├── UsersService.js          # ✨ NEW
+│   │   └── AuthenticationsService.js # ✨ NEW
+│   ├── tokenize/                    # ✨ NEW
+│   │   └── TokenManager.js          # JWT token utilities
+│   ├── validator/                   # Input validation
+│   │   ├── albums.js
+│   │   ├── songs.js
+│   │   ├── users.js                 # ✨ NEW
+│   │   └── authentications.js       # ✨ NEW
+│   └── server.js                    # Main server file
+├── .env                             # Environment variables
+├── .env.example                     # Environment template
 ├── package.json
-└── README.md
+├── README.md
+├── AUTHENTICATION.md                # Authentication API docs
+├── TESTING_GUIDE.md                 # Quick testing guide
+├── IMPLEMENTATION_SUMMARY.md        # Implementation details
+└── ARCHITECTURE.md                  # Flow diagrams
 ```
 
 ## Database Migrations
@@ -147,11 +217,53 @@ npm run migrate down
 
 ## Technologies Used
 
-- **Framework**: Hapi.js
+- **Framework**: Hapi.js v21+
 - **Database**: PostgreSQL
 - **Migration Tool**: node-pg-migrate
 - **Environment Variables**: dotenv
 - **ID Generation**: nanoid
+- **Authentication**: @hapi/jwt
+- **Password Hashing**: bcrypt
+
+## 📚 Documentation
+
+- **[AUTHENTICATION.md](./AUTHENTICATION.md)** - Complete authentication API reference
+- **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Step-by-step testing instructions
+- **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Detailed implementation overview
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Authentication flow diagrams
+- **[API_TESTING.md](./API_TESTING.md)** - API testing examples
+- **[DATABASE_SETUP.md](./DATABASE_SETUP.md)** - Database configuration guide
+
+## 🚀 Quick Start for Authentication
+
+1. **Setup environment** (see `.env.example`)
+2. **Run migrations**: `npm run migrate up`
+3. **Start server**: `npm start`
+4. **Register user**: `POST /users`
+5. **Login**: `POST /authentications`
+6. **Use tokens** for protected routes!
+
+See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for detailed examples.
+
+## 🔒 Protecting Routes with JWT
+
+To protect any route, add the JWT auth strategy:
+
+```javascript
+{
+  method: 'GET',
+  path: '/playlists',
+  handler: handler.getPlaylistsHandler,
+  options: {
+    auth: 'openmusic_jwt',  // Require authentication
+  },
+}
+```
+
+Access user ID in handlers:
+```javascript
+const { userId } = request.auth.credentials;
+```
 
 ## License
 
