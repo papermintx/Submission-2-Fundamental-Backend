@@ -1,7 +1,7 @@
 const PlaylistsHandler = require('./handler');
 
-const routes = (playlistsService, songsService) => {
-  const handler = new PlaylistsHandler(playlistsService, songsService);
+const routes = (playlistsService, songsService, activitiesService) => {
+  const handler = new PlaylistsHandler(playlistsService, songsService, activitiesService);
 
   return [
     {
@@ -48,6 +48,14 @@ const routes = (playlistsService, songsService) => {
       method: 'DELETE',
       path: '/playlists/{id}/songs',
       handler: handler.deleteSongFromPlaylistHandler,
+      options: {
+        auth: 'openmusic_jwt',
+      },
+    },
+    {
+      method: 'GET',
+      path: '/playlists/{id}/activities',
+      handler: handler.getPlaylistActivitiesHandler,
       options: {
         auth: 'openmusic_jwt',
       },

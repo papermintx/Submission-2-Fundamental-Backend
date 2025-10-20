@@ -2,6 +2,7 @@ const { nanoid } = require('nanoid');
 const bcrypt = require('bcrypt');
 const DatabaseService = require('./DatabaseService');
 const InvariantError = require('../exceptions/InvariantError');
+const AuthenticationError = require('../exceptions/AuthenticationError');
 
 class UsersService extends DatabaseService {
   constructor() {
@@ -68,7 +69,7 @@ class UsersService extends DatabaseService {
     const result = await this.query(query.text, query.values);
 
     if (!result.rows.length) {
-      throw new InvariantError('Kredensial yang Anda berikan salah');
+      throw new AuthenticationError('Kredensial yang Anda berikan salah');
     }
 
     const { id, password: hashedPassword } = result.rows[0];
@@ -76,7 +77,7 @@ class UsersService extends DatabaseService {
     const match = await bcrypt.compare(password, hashedPassword);
 
     if (!match) {
-      throw new InvariantError('Kredensial yang Anda berikan salah');
+      throw new AuthenticationError('Kredensial yang Anda berikan salah');
     }
 
     return id;

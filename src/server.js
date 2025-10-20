@@ -10,6 +10,7 @@ const UsersService = require('./services/UsersService');
 const AuthenticationsService = require('./services/AuthenticationsService');
 const PlaylistsService = require('./services/PlaylistsService');
 const CollaborationsService = require('./services/CollaborationsService');
+const ActivitiesService = require('./services/ActivitiesService');
 
 // Routes
 const albumsRoutes = require('./api/albums/routes');
@@ -26,6 +27,7 @@ const init = async () => {
   const authenticationsService = new AuthenticationsService();
   const playlistsService = new PlaylistsService();
   const collaborationsService = new CollaborationsService();
+  const activitiesService = new ActivitiesService();
 
   const server = Hapi.server({
     port: process.env.PORT || 5000,
@@ -66,7 +68,7 @@ const init = async () => {
   server.route(songsRoutes(songsService));
   server.route(usersRoutes(usersService));
   server.route(authenticationsRoutes(authenticationsService, usersService));
-  server.route(playlistsRoutes(playlistsService, songsService));
+  server.route(playlistsRoutes(playlistsService, songsService, activitiesService));
   server.route(collaborationsRoutes(collaborationsService, playlistsService));
 
   // Error handling extension
