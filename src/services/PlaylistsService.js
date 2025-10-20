@@ -25,13 +25,20 @@ class PlaylistsService extends DatabaseService {
     return result.rows[0].id;
   }
 
-  async getPlaylists(owner) {
+  async getPlaylists(userId) {
+    // UNION: Return playlists where user is owner OR collaborator
     const query = {
       text: `SELECT playlists.id, playlists.name, users.username 
              FROM playlists 
              LEFT JOIN users ON users.id = playlists.owner 
-             WHERE playlists.owner = $1`,
-      values: [owner],
+             WHERE playlists.owner = $1
+             UNION
+             SELECT playlists.id, playlists.name, users.username 
+             FROM playlists 
+             LEFT JOIN users ON users.id = playlists.owner
+             INNER JOIN collaborations ON collaborations.playlist_id = playlists.id
+             WHERE collaborations.user_id = $1`,
+      values: [userId],
     };
 
     const result = await this.query(query.text, query.values);
@@ -66,6 +73,39 @@ class PlaylistsService extends DatabaseService {
     const playlist = result.rows[0];
 
     if (playlist.owner !== owner) {
+      throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
+    }
+  }
+
+  async verifyPlaylistAccess(playlistId, userId) {
+    // Check if playlist exists first
+    const playlistQuery = {
+      text: 'SELECT * FROM playlists WHERE id = $1',
+      values: [playlistId],
+    };
+
+    const playlistResult = await this.query(playlistQuery.text, playlistQuery.values);
+
+    if (!playlistResult.rows.length) {
+      throw new NotFoundError('Playlist tidak ditemukan');
+    }
+
+    // Check if user is owner OR collaborator
+    const query = {
+      text: `SELECT playlists.id 
+             FROM playlists 
+             WHERE playlists.id = $1 AND playlists.owner = $2
+             UNION
+             SELECT playlists.id 
+             FROM playlists
+             INNER JOIN collaborations ON collaborations.playlist_id = playlists.id
+             WHERE playlists.id = $1 AND collaborations.user_id = $2`,
+      values: [playlistId, userId],
+    };
+
+    const result = await this.query(query.text, query.values);
+
+    if (!result.rows.length) {
       throw new AuthorizationError('Anda tidak berhak mengakses resource ini');
     }
   }

@@ -1,4 +1,3 @@
-
 /**
  * @param pgm {import('node-pg-migrate').MigrationBuilder}
  * @param run {() => void | undefined}

@@ -68,8 +68,8 @@ class PlaylistsHandler {
     const { songId } = request.payload;
     const { userId } = request.auth.credentials;
 
-    // Verify ownership/access
-    await this._playlistsService.verifyPlaylistOwner(id, userId);
+    // Verify access (owner OR collaborator)
+    await this._playlistsService.verifyPlaylistAccess(id, userId);
 
     // Validate song exists (must return 404 with specific message if not found)
     try {
@@ -103,8 +103,8 @@ class PlaylistsHandler {
     const { id } = request.params;
     const { userId } = request.auth.credentials;
 
-    // Verify ownership/access
-    await this._playlistsService.verifyPlaylistOwner(id, userId);
+    // Verify access (owner OR collaborator)
+    await this._playlistsService.verifyPlaylistAccess(id, userId);
 
     // Get playlist details
     const playlist = await this._playlistsService.getPlaylistById(id);
@@ -132,8 +132,8 @@ class PlaylistsHandler {
     const { songId } = request.payload;
     const { userId } = request.auth.credentials;
 
-    // Verify ownership/access
-    await this._playlistsService.verifyPlaylistOwner(id, userId);
+    // Verify access (owner OR collaborator)
+    await this._playlistsService.verifyPlaylistAccess(id, userId);
 
     // Delete song from playlist
     await this._playlistsService.deleteSongFromPlaylist(id, songId);
