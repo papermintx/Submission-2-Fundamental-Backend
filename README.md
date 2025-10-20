@@ -10,13 +10,21 @@ A RESTful API for managing music albums and songs, built with Node.js Hapi frame
   - Song searching by title and performer
   - Album-Song relationships (view songs associated with an album)
 
-- **🔐 Authentication & Security** ✨ NEW
+- **🔐 Authentication & Security**
   - User registration with unique username validation
   - Secure password hashing with bcrypt
   - JWT-based authentication (access & refresh tokens)
   - Token refresh mechanism for session management
   - Secure logout with token invalidation
   - Ready-to-use JWT strategy for protected routes
+
+- **📝 Playlist Management** ✨ NEW
+  - Create personal playlists
+  - Add/remove songs to/from playlists
+  - View playlist details with full song information
+  - Owner-based access control and authorization
+  - Automatic cascade deletion for data integrity
+  - Duplicate song prevention per playlist
 
 - **🛠️ Technical Features**
   - PostgreSQL database with migrations
@@ -102,6 +110,37 @@ The API will be available at `http://localhost:5000` (or your configured HOST an
 
 📖 **[View detailed authentication documentation →](./AUTHENTICATION.md)**
 
+### 📝 Playlists (NEW! - Requires Authentication)
+
+- **POST /playlists** - Create a new playlist
+  - Auth: Required (JWT)
+  - Body: `{ "name": "string" }`
+  - Response: `{ "status": "success", "data": { "playlistId": "string" } }`
+
+- **GET /playlists** - Get user's playlists
+  - Auth: Required (JWT)
+  - Response: `{ "status": "success", "data": { "playlists": [...] } }`
+
+- **DELETE /playlists/{id}** - Delete a playlist (owner only)
+  - Auth: Required (JWT)
+  - Response: `{ "status": "success", "message": "Playlist berhasil dihapus" }`
+
+- **POST /playlists/{id}/songs** - Add song to playlist (owner only)
+  - Auth: Required (JWT)
+  - Body: `{ "songId": "string" }`
+  - Response: `{ "status": "success", "message": "Lagu berhasil ditambahkan ke playlist" }`
+
+- **GET /playlists/{id}/songs** - Get playlist songs (owner only)
+  - Auth: Required (JWT)
+  - Response: `{ "status": "success", "data": { "playlist": {...} } }`
+
+- **DELETE /playlists/{id}/songs** - Remove song from playlist (owner only)
+  - Auth: Required (JWT)
+  - Body: `{ "songId": "string" }`
+  - Response: `{ "status": "success", "message": "Lagu berhasil dihapus dari playlist" }`
+
+📖 **[View detailed playlist documentation →](./PLAYLISTS.md)**
+
 ### Albums
 
 - **POST /albums** - Create a new album
@@ -161,38 +200,45 @@ The API will be available at `http://localhost:5000` (or your configured HOST an
 ├── migrations/                      # Database migrations
 │   ├── *_create-table-albums.js
 │   ├── *_create-table-songs.js
-│   ├── *_create-table-users.js      # ✨ NEW
-│   └── *_create-table-authentications.js  # ✨ NEW
+│   ├── *_create-table-users.js
+│   ├── *_create-table-authentications.js
+│   ├── *_create-table-playlists.js          # ✨ NEW
+│   └── *_create-table-playlist-songs.js     # ✨ NEW
 ├── src/
 │   ├── api/                         # API handlers and routes
 │   │   ├── albums/
 │   │   ├── songs/
-│   │   ├── users/                   # ✨ NEW
-│   │   └── authentications/         # ✨ NEW
+│   │   ├── users/
+│   │   ├── authentications/
+│   │   └── playlists/               # ✨ NEW
 │   ├── exceptions/                  # Custom error classes
 │   │   ├── ClientError.js
 │   │   ├── InvariantError.js
 │   │   ├── NotFoundError.js
-│   │   └── AuthenticationError.js   # ✨ NEW
+│   │   ├── AuthenticationError.js
+│   │   └── AuthorizationError.js    # ✨ NEW
 │   ├── services/                    # Business logic
 │   │   ├── DatabaseService.js
 │   │   ├── AlbumsService.js
 │   │   ├── SongsService.js
-│   │   ├── UsersService.js          # ✨ NEW
-│   │   └── AuthenticationsService.js # ✨ NEW
-│   ├── tokenize/                    # ✨ NEW
+│   │   ├── UsersService.js
+│   │   ├── AuthenticationsService.js
+│   │   └── PlaylistsService.js      # ✨ NEW
+│   ├── tokenize/
 │   │   └── TokenManager.js          # JWT token utilities
 │   ├── validator/                   # Input validation
 │   │   ├── albums.js
 │   │   ├── songs.js
-│   │   ├── users.js                 # ✨ NEW
-│   │   └── authentications.js       # ✨ NEW
+│   │   ├── users.js
+│   │   ├── authentications.js
+│   │   └── playlists.js             # ✨ NEW
 │   └── server.js                    # Main server file
 ├── .env                             # Environment variables
 ├── .env.example                     # Environment template
 ├── package.json
 ├── README.md
 ├── AUTHENTICATION.md                # Authentication API docs
+├── PLAYLISTS.md                     # Playlist API docs ✨ NEW
 ├── TESTING_GUIDE.md                 # Quick testing guide
 ├── IMPLEMENTATION_SUMMARY.md        # Implementation details
 └── ARCHITECTURE.md                  # Flow diagrams
@@ -228,6 +274,7 @@ npm run migrate down
 ## 📚 Documentation
 
 - **[AUTHENTICATION.md](./AUTHENTICATION.md)** - Complete authentication API reference
+- **[PLAYLISTS.md](./PLAYLISTS.md)** - Complete playlist management API reference ✨ NEW
 - **[TESTING_GUIDE.md](./TESTING_GUIDE.md)** - Step-by-step testing instructions
 - **[IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md)** - Detailed implementation overview
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Authentication flow diagrams
