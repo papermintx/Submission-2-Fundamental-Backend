@@ -11,6 +11,10 @@ const AuthenticationsService = require('./services/AuthenticationsService');
 const PlaylistsService = require('./services/PlaylistsService');
 const CollaborationsService = require('./services/CollaborationsService');
 const ActivitiesService = require('./services/ActivitiesService');
+const ProducerService = require('./services/rabbitmq/ProducerService');
+
+// Validators
+const ExportsValidator = require('./validator/exports');
 
 // Routes
 const albumsRoutes = require('./api/albums/routes');
@@ -19,6 +23,9 @@ const usersRoutes = require('./api/users/routes');
 const authenticationsRoutes = require('./api/authentications/routes');
 const playlistsRoutes = require('./api/playlists/routes');
 const collaborationsRoutes = require('./api/collaborations/routes');
+
+// Plugins
+const _exports = require('./api/exports');
 
 const init = async () => {
   const albumsService = new AlbumsService();
@@ -58,6 +65,7 @@ const init = async () => {
     validate: (artifacts) => ({
       isValid: true,
       credentials: {
+        id: artifacts.decoded.payload.userId,
         userId: artifacts.decoded.payload.userId,
       },
     }),
@@ -70,6 +78,18 @@ const init = async () => {
   server.route(authenticationsRoutes(authenticationsService, usersService));
   server.route(playlistsRoutes(playlistsService, songsService, activitiesService));
   server.route(collaborationsRoutes(collaborationsService, playlistsService));
+
+  // Register exports plugin
+  await server.register([
+    {
+      plugin: _exports,
+      options: {
+        producerService: ProducerService,
+        playlistsService,
+        validator: ExportsValidator,
+      },
+    },
+  ]);
 
   // Error handling extension
   server.ext('onPreResponse', (request, h) => {
