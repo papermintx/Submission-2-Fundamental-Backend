@@ -2,10 +2,12 @@ const { nanoid } = require('nanoid');
 const NotFoundError = require('../exceptions/NotFoundError');
 const InvariantError = require('../exceptions/InvariantError');
 const DatabaseService = require('./DatabaseService');
+const RedisService = require('./redis/RedisService');
 
 class AlbumsService {
   constructor() {
     this._db = new DatabaseService();
+    this._redis = new RedisService();
   }
 
   async addAlbum({ name, year }) {
@@ -141,6 +143,9 @@ class AlbumsService {
       throw new InvariantError('Failed to like album');
     }
 
+    // Delete cache after like
+    await this._redis.delete(`album-likes:${albumId}`);
+
     return result.rows[0].id;
   }
 
@@ -158,20 +163,53 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError('You have not liked this album');
     }
+
+    // Delete cache after unlike
+    await this._redis.delete(`album-likes:${albumId}`);
   }
 
   async getAlbumLikesCount(albumId) {
     // Verify album exists
     await this.getAlbumById(albumId);
 
+    // Try to get from cache first
+    try {
+      const cacheKey = `album-likes:${albumId}`;
+      const cachedLikes = await this._redis.get(cacheKey);
+
+      if (cachedLikes !== null) {
+        return {
+          count: parseInt(cachedLikes, 10),
+          source: 'cache',
+        };
+      }
+    } catch (error) {
+      console.error('Redis error:', error);
+      // Continue to database if cache fails
+    }
+
+    // Get from database
     const query = {
       text: 'SELECT COUNT(*) as count FROM user_album_likes WHERE album_id = $1',
       values: [albumId],
     };
 
     const result = await this._db.query(query.text, query.values);
+    const count = parseInt(result.rows[0].count, 10);
 
-    return parseInt(result.rows[0].count, 10);
+    // Save to cache for 30 minutes (1800 seconds)
+    try {
+      const cacheKey = `album-likes:${albumId}`;
+      await this._redis.set(cacheKey, count.toString(), 1800);
+    } catch (error) {
+      console.error('Redis error:', error);
+      // Continue even if cache fails
+    }
+
+    return {
+      count,
+      source: 'database',
+    };
   }
 }
 
