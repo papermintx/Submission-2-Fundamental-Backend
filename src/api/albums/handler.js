@@ -12,6 +12,9 @@ class AlbumsHandler {
     this.putAlbumByIdHandler = this.putAlbumByIdHandler.bind(this);
     this.deleteAlbumByIdHandler = this.deleteAlbumByIdHandler.bind(this);
     this.postAlbumCoverHandler = this.postAlbumCoverHandler.bind(this);
+    this.postAlbumLikeHandler = this.postAlbumLikeHandler.bind(this);
+    this.deleteAlbumLikeHandler = this.deleteAlbumLikeHandler.bind(this);
+    this.getAlbumLikesHandler = this.getAlbumLikesHandler.bind(this);
   }
 
   async postAlbumHandler(request, h) {
@@ -143,6 +146,44 @@ class AlbumsHandler {
     });
     response.code(201);
     return response;
+  }
+
+  async postAlbumLikeHandler(request, h) {
+    const { id } = request.params;
+    const { id: userId } = request.auth.credentials;
+
+    await this._service.addAlbumLike(id, userId);
+
+    const response = h.response({
+      status: 'success',
+      message: 'Album liked successfully',
+    });
+    response.code(201);
+    return response;
+  }
+
+  async deleteAlbumLikeHandler(request, h) {
+    const { id } = request.params;
+    const { id: userId } = request.auth.credentials;
+
+    await this._service.removeAlbumLike(id, userId);
+
+    return {
+      status: 'success',
+      message: 'Album unliked successfully',
+    };
+  }
+
+  async getAlbumLikesHandler(request, h) {
+    const { id } = request.params;
+    const likes = await this._service.getAlbumLikesCount(id);
+
+    return {
+      status: 'success',
+      data: {
+        likes,
+      },
+    };
   }
 }
 
