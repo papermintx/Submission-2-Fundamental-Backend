@@ -28,7 +28,7 @@ class AlbumsService {
 
   async getAlbumById(id) {
     const query = {
-      text: 'SELECT id, name, year FROM albums WHERE id = $1',
+      text: 'SELECT id, name, year, cover_url as "coverUrl" FROM albums WHERE id = $1',
       values: [id],
     };
 
@@ -78,6 +78,36 @@ class AlbumsService {
     if (!result.rows.length) {
       throw new NotFoundError('Failed to delete album. Album not found');
     }
+  }
+
+  async updateAlbumCover(id, coverUrl) {
+    const updatedAt = new Date().toISOString();
+
+    const query = {
+      text: 'UPDATE albums SET cover_url = $1, updated_at = $2 WHERE id = $3 RETURNING id',
+      values: [coverUrl, updatedAt, id],
+    };
+
+    const result = await this._db.query(query.text, query.values);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Failed to update album cover. Album not found');
+    }
+  }
+
+  async getAlbumCoverUrl(id) {
+    const query = {
+      text: 'SELECT cover_url as "coverUrl" FROM albums WHERE id = $1',
+      values: [id],
+    };
+
+    const result = await this._db.query(query.text, query.values);
+
+    if (!result.rows.length) {
+      throw new NotFoundError('Album not found');
+    }
+
+    return result.rows[0].coverUrl;
   }
 }
 
