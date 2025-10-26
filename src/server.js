@@ -1,6 +1,8 @@
 require('dotenv').config();
 const Hapi = require('@hapi/hapi');
 const Jwt = require('@hapi/jwt');
+const Inert = require('@hapi/inert');
+const path = require('path');
 const ClientError = require('./exceptions/ClientError');
 
 // Services
@@ -51,6 +53,9 @@ const init = async () => {
     {
       plugin: Jwt,
     },
+    {
+      plugin: Inert,
+    },
   ]);
 
   // Define JWT authentication strategy
@@ -78,6 +83,17 @@ const init = async () => {
   server.route(authenticationsRoutes(authenticationsService, usersService));
   server.route(playlistsRoutes(playlistsService, songsService, activitiesService));
   server.route(collaborationsRoutes(collaborationsService, playlistsService));
+
+  // Static file route for uploads
+  server.route({
+    method: 'GET',
+    path: '/uploads/{param*}',
+    handler: {
+      directory: {
+        path: path.resolve(__dirname, '../uploads'),
+      },
+    },
+  });
 
   // Register exports plugin
   await server.register([
